@@ -1,30 +1,30 @@
-# tiny-chess-01 starter
+# Tiny Chess Engine
 
-A working entry to fork: `main.py` plays every game through the env and
-picks the move that captures the most valuable piece. It is a template,
-not a contender. Replace its one-line choice with a real search.
+A deterministic 4 KB chess engine for tiny-chess-01. Single file
+`main.py` (4,096 bytes, Python 3.13 stdlib only), lzma-packed.
 
-## The size rule
+## Search
 
-- `main.py` is the whole engine: at most 4,096 bytes as committed,
-  Python 3.13, standard library only. It reads, imports or execs no other
-  file in the repository.
-- Every byte counts: comments, whitespace, docstrings.
-- Compression is allowed and counted. A `main.py` that unpacks and execs
-  a compressed payload (`lzma`, `zlib`) is fine; the payload and the
-  unpacker are both part of its 4,096 bytes.
-- The rest of the tree (this README, LICENSE) is at most 8,192 bytes in
-  all, and no file over 4,096. MIT, BSD, ISC and 0BSD licences fit.
-- Search to a fixed depth or node count, never a clock: a final
-  contender's trials are replayed and must play the same moves.
+Negamax alpha-beta with iterative deepening under a fixed node budget
+(120,000 nodes, never a clock), so replays are byte-identical.
+Quiescence search (captures/promotions; all evasions in check),
+transposition table, one killer move per ply, MVV-LVA capture ordering,
+and late-move reductions with a full-depth re-search when the reduced
+score beats alpha. Deterministic: no wall clock, no unseeded randomness.
 
-## Grade it locally
+## Evaluation
 
-You need Docker and the `makefun` CLI. Download the competition's dev
-kit, unpack it, and from inside it run:
+Material + piece-square tables (all pieces, 4-bit packed) with a
+tapered king term. 0x88 board, Zobrist hashing, incremental eval.
 
-    makefun grade-local --kit . --bot <your repository> --driver docker
+## Protocol
 
-It plays one practice trial against the house engines, replays it, and
-prints the Elo the scorer gives it. Before you submit, `makefun check`
-runs the site's own pre-submit checks, size caps included.
+Plays through `MAKEFUN_ENV_URL`: `POST /game`, `POST /move`. Legal
+moves only; falls back to the env's first legal move if needed.
+
+## Practice trials (local, kit env server)
+
+- trial-0: 0 points, Elo 0 (6 losses by checkmate).
+- v6 dev reference (unpacked, 24 KB): mean Elo 1305 over 3 trials.
+
+The 4 KB packing cost substantial strength vs the unpacked reference.
